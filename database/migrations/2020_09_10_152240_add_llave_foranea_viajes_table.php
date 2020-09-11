@@ -15,7 +15,7 @@ class AddLlaveForaneaViajesTable extends Migration
     {
         Schema::table('viajes', function (Blueprint $table) {
             $table->string('email')->after('ciudad');            ;
-            $table->foreign('email')->references('email')->on('clientes')->onDelete('cascade');
+            $table->foreign('email')->references('email')->on('clientes')->onDelete('cascade')->onUpdate('cascade');
         });
     }
 

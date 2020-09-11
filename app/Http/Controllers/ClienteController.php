@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Cliente;
+use Illuminate\Support\Facades\Storage;
 
 class ClienteController extends Controller
 {
@@ -82,7 +83,7 @@ class ClienteController extends Controller
             $cliente->telefono = $request->telefono;
             $cliente->email = $request->email;
             $cliente->direccion = $request->direccion;
-            $cliente->foto = $request->foto;
+            $cliente->foto = $request->file('foto')->store('');
             //Guardamos el cambio en nuestro modelo
             $cliente->save();
             return response()->json([
@@ -130,9 +131,9 @@ class ClienteController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit( $id)
     {
-        //
+
     }
 
     /**
@@ -144,7 +145,31 @@ class ClienteController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        try{
+            $cliente = Cliente::findOrFail($id);
+            if($request->hasFile('foto')){
+                Storage::delete($cliente->foto);
+                $cliente->foto = $request->foto->store('');
+            }
+            $cliente->nombre = $request->nombre;
+            $cliente->telefono = $request->telefono;
+            $cliente->email = $request->email;
+            $cliente->direccion = $request->direccion;
+
+            $cliente->save();
+
+            $data = Cliente::find($id);
+            return response()->json([
+                'Estado' => 'Ok',
+                'Data' => $data,
+            ]);
+         }
+         catch(\Exception $e){
+            return response()->json([
+                'Estado' => 'Error',
+                'Mensaje' => $e->getMessage(),
+            ]);
+         }
     }
 
     /**
@@ -155,6 +180,21 @@ class ClienteController extends Controller
      */
     public function destroy($id)
     {
-        //
+        try{
+            $cliente = Cliente::findOrFail($id);
+            Storage::delete($cliente->foto);
+            $cliente->delete();
+            return response()->json([
+                'Estado' => 'Ok',
+                'Mensaje' => 'Eliminado correctamente',
+            ]);
+        }
+        catch(\Exception $e){
+            return response()->json([
+                'Estado' => 'Error',
+                'Mensaje' => $e->getMessage(),
+            ]);
+        }
+
     }
 }
