@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Cliente;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class ClienteController extends Controller
 {
@@ -78,18 +79,40 @@ class ClienteController extends Controller
     public function store(Request $request)
     {
         try{
+            $validator = Validator::make($request->all(), [
+                'nombre' => 'required',
+                'telefono' => 'required',
+                'email' => 'required|email|unique:clientes',
+                'direccion' => 'required',
+                'foto' => 'required|mimes:jpeg,png',
+            ]);
+
+            if ($validator->fails()) {
+                $messages=$validator->getMessageBag();
+                $errors=$messages->all();
+                return response()->json([
+                    'Estado' => 'Error',
+                    'Mensaje' => $errors,
+                ]);
+            }
+
             $cliente = new Cliente;
             $cliente->nombre = $request->nombre;
             $cliente->telefono = $request->telefono;
             $cliente->email = $request->email;
             $cliente->direccion = $request->direccion;
-            $cliente->foto = $request->file('foto')->store('');
+
+            if ( !empty($request->file('foto')) ){
+                $cliente->foto = $request->file('foto')->store('');
+            }
+
             //Guardamos el cambio en nuestro modelo
             $cliente->save();
             return response()->json([
                 'Estado' => 'Ok',
                 'Mensaje' => 'El cliente se guardo correctamente.',
             ]);
+
          }
          catch(\Exception $e){
             return response()->json([
