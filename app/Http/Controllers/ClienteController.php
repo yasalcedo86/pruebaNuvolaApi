@@ -18,6 +18,12 @@ class ClienteController extends Controller
         $filter = $request->get('filter');
         $key = $request->get('key');
         try{
+            /**
+             * para los filtros se puede trabajar con el request_has para validar que filtros estás recibiendo del cliente
+             * esto facilita el trabajar con varios filtros a la vez
+             * puedes ir agregando querys a la consulta las veces que quieras hasta que agregues el metodo paginate,get,first,etc
+             * esto permite ir anexando los filtros uno por uno sin que se ejecute el query automaticamente
+             */
             switch ($filter) {
                 case 1:
                     $data = Cliente::where('email', 'like', '%' . $key . '%')->paginate(5);
@@ -26,7 +32,7 @@ class ClienteController extends Controller
                     $data = Cliente::whereMonth('created_at' , $key)->paginate();
                     break;
                 default:
-                    $data = Cliente::paginate(5);
+                    $data = Cliente::with('viajes')->paginate(5); // el with te permite anexar la relación que se encuentra en el modelo de cliente
                     break;
             }
             return response()->json([
@@ -78,13 +84,23 @@ class ClienteController extends Controller
      */
     public function store(Request $request)
     {
+        /**
+         * si se debe de realizar una api rest, en la creación de un modelo
+         * lo más recomendable es recibir un objeto json y no form params en el request.
+         * para el caso de la imagen, se puede agregar como base 64 o agregarla como form params
+         */
+
+         /**
+          * NOTA IMPORTANTE: siempre debes de tener en cuenta el codigo http cuando se está trabajando con Api
+          * esto permite una validación mas sencilla en el cliente
+          */
         try{
             $validator = Validator::make($request->all(), [
                 'nombre' => 'required',
                 'telefono' => 'required',
                 'email' => 'required|email|unique:clientes',
                 'direccion' => 'required',
-                'foto' => 'required|mimes:jpeg,png',
+                'foto' => 'required|mimes:jpeg,png', 
             ]);
 
             if ($validator->fails()) {
@@ -95,6 +111,24 @@ class ClienteController extends Controller
                     'Mensaje' => $errors,
                 ]);
             }
+
+            /**
+             * para crear un nuevo registro usando su modelo correspondiente se puede realizar con el metodo create()
+             * este metodo te permite pasar como argumento un array con los datos del nuevo registro:
+             * $cliente = Cliente::create([
+             *   'nombre' => 'jose',
+             *   'telefono' => '345402',
+             *   ...
+             * ]);
+             * esto evita que el servidor realice cambios a los datos del modelo y genere de manera automatica el nuevo registro
+             * en la base de datos
+            */ 
+
+            /**
+             * consejo para trabajar con arrays:
+             * LARAVEL ofrece una gran cantidad de helpers que te facilitarán la vida al trabajar con arrays, los mas
+             * comunes son: array_get, array_has usados para obtener y validar un valor del array
+             */
 
             $cliente = new Cliente;
             $cliente->nombre = $request->nombre;
@@ -168,6 +202,7 @@ class ClienteController extends Controller
      */
     public function update(Request $request, $id)
     {
+
         try{
             $cliente = Cliente::findOrFail($id);
             if($request->hasFile('foto')){
